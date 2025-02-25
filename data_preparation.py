@@ -2,11 +2,13 @@ import requests
 import pandas as pd
 import time
 import json
+from dotenv import load_dotenv
+
 
 import os
+load_dotenv()
 # Your CoinAPI API Key
 API_KEY= os.getenv("coinapi")
-
 def get_crypto_data(
     crypto="BTC",
     quote_currency="USDT",
@@ -226,3 +228,24 @@ def fetch_with_fallbacks(
 
 # Fetch SOL data with 15-minute candles for a specific date range
 # sol_15min = fetch_with_fallbacks("SOL", start_date="2023-01-01T00:00:00", end_date="2023-12-31T23:59:59", period_id="15MIN")
+
+
+def read_crypto_data(crypto:list):
+    results = []
+    for crypto in crypto:
+        crypto_data = pd.read_csv(f'data/hourly_crypto_data/{crypto}_hourly.csv')
+        crypto_data['time_period_end'] = pd.to_datetime(crypto_data['time_period_end'], errors='coerce')
+        crypto_data['time_open'] = pd.to_datetime(crypto_data['time_open'], errors='coerce')
+        crypto_data['time_close'] = pd.to_datetime(crypto_data['time_close'], errors='coerce')
+
+        crypto_data['time_period_end'] = crypto_data['time_period_end'].dt.strftime('%Y-%m-%d %H:%M')
+        crypto_data['time_open'] = crypto_data['time_open'].dt.strftime('%Y-%m-%d %H:%M')
+        crypto_data['time_close'] = crypto_data['time_close'].dt.strftime('%Y-%m-%d %H:%M')
+
+        results.append(crypto_data)
+
+    return tuple(results)
+
+
+# Example:
+# btc, eth, sol = read_crypto_data(['btc', 'eth', 'sol'])
