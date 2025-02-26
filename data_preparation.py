@@ -249,3 +249,28 @@ def read_crypto_data(crypto:list):
 
 # Example:
 # btc, eth, sol = read_crypto_data(['btc', 'eth', 'sol'])
+
+def read_crypto_oc_data(cryptos = "BTC"):
+    directory = os.path.join(os.getcwd(), "Parquet_Data")
+
+
+
+    for crypto in cryptos:
+        crypto.upper()
+        for filename in os.listdir(directory):
+            if crypto in filename and filename.endswith(".parquet"):
+                file_path = os.path.join(directory, filename)
+
+                df = pd.read_parquet(file_path)
+
+                df['hour'] = pd.to_datetime(df['hour'], errors='coerce')
+
+
+                df['hour'] = df['hour'].dt.strftime('%Y-%m-%d %H:%M')
+                df.reset_index(inplace=True)
+                df.drop(columns=['index'], inplace=True)
+
+    return df
+
+#Example:
+#btc_oc = read_crypto_oc_data("BTC")
