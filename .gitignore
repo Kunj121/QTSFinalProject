@@ -1,1 +1,5 @@
 .env
+kunj/
+kunj/data_preparation.py
+kunj/data.ipynb
+kunj/sql.py
