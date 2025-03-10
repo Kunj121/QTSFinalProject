@@ -91,3 +91,45 @@ def round_hours(staking_dat):
 
     return staking_data
     
+def process_staking_data(raw_staking_data):
+
+    raw_data = round_hours(raw_staking_data)
+    token_dfs = {}
+
+    for token in raw_data['symbol'].unique():
+        # Filter data for the current token
+        token_data = raw_data[raw_data['symbol'] == token].copy()
+        
+        # Pivot the data so that: index is the createdAt timestamp, columns are the metricKey values, and values are the defaultValue
+        token_pivot = token_data.pivot_table(index='createdAt_rounded', columns='metricKey', values='defaultValue', aggfunc='first')
+        token_pivot.sort_index(inplace=True)
+        token_dfs[token] = token_pivot
+    
+    return token_dfs
+
+def construct_forward_backward_dfs(features_df, prices_df, forward_size, backward_size):
+    # Index of the dfs should be time_period_end
+
+    # Aggregate the features
+    features = features_df.copy()
+    features['EMAcross_agg'] = features['EMAcross'].ewm(span=backward_size, adjust=False).mean()
+    features['bollinger_agg'] = features['bollinger'].ewm(span=backward_size, adjust=False).mean()
+    features['RSI_agg'] = features['RSI'].ewm(span=backward_size, adjust=False).mean()
+    features['fib_23_agg'] = features['fib_23'].ewm(span=backward_size, adjust=False).mean()
+    features['fib_38_agg'] = features['fib_38'].ewm(span=backward_size, adjust=False).mean()
+    features['fib_50_agg'] = features['fib_50'].ewm(span=backward_size, adjust=False).mean()
+    features['fib_61_agg'] = features['fib_61'].ewm(span=backward_size, adjust=False).mean()
+    features['fib_78_agg'] = features['fib_78'].ewm(span=backward_size, adjust=False).mean()
+
+    # Aggregate the normalized prices 
+    prices = prices_df.copy()
+    prices = prices.shift(forward_size) 
+
+    if forward_size > backward_size:
+        features = features.iloc[forward_size:]
+        prices = prices.iloc[forward_size:]
+    else:
+        features = features.iloc[backward_size:]
+        prices = prices.iloc[backward_size:]
+    
+    return features, prices
