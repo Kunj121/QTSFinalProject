@@ -1,10 +1,10 @@
 import pandas as pd 
 import numpy as np
 
-def clean_data(data, price_data=None, on_chain_data=None, set_index=True):
-    if price_data and on_chain_data:
-        raise ValueError('Invalid Parameter Values: Both price_data or on_chain Data cannot be True')
-    elif price_data:
+def clean_data(data, price_data=None, on_chain_data=None, staking_data=None, set_index=True):
+    #if price_data and on_chain_data:
+    #raise ValueError('Invalid Parameter Values: Both price_data or on_chain Data cannot be True')
+    if price_data:
         prices = data.copy()
         if prices.isna().any().any():
             print('you have nans here')
@@ -29,6 +29,19 @@ def clean_data(data, price_data=None, on_chain_data=None, set_index=True):
         if set_index:
             metrics['hour'] = pd.to_datetime(metrics['hour'])
             metrics = metrics.set_index('hour')
+        else:
+            metrics.index = pd.to_datetime(metrics.index)
+        return metrics
+    
+    elif staking_data:
+        metrics = data.copy()
+        if metrics.isna().any().any():
+            print('you have nans here')
+            return metrics 
+        
+        if set_index:
+            metrics['createdAt_rounded'] = pd.to_datetime(metrics['createdAt_rounded'])
+            metrics = metrics.set_index('createdAt_rounded')
         else:
             metrics.index = pd.to_datetime(metrics.index)
         return metrics
@@ -57,28 +70,32 @@ def check_missing_hours(df):
     missing = expected_range.difference(df.index)
     return missing
 
-def preprocess_data(data, price_data=None, on_chain_data=None, set_index=True):
-    if price_data and on_chain_data:
-        raise ValueError('Invalid Parameter Values. Both price_data and on_chain_data cannot both be True')
+def preprocess_data(data, price_data=None, on_chain_data=None, staking_data=None, set_index=True):
+    #if price_data and on_chain_data:
+    #raise ValueError('Invalid Parameter Values. Both price_data and on_chain_data cannot both be True')
 
-    elif (not price_data) and (not on_chain_data):
-        raise ValueError('Invalid Parameter Values. Both price_data and on_chain_data cannot both be False')
+    #if (not price_data) and (not on_chain_data):
+    #raise ValueError('Invalid Parameter Values. Both price_data and on_chain_data cannot both be False')
     
-    else:
-        # Create the target df and merge on correct dates. Then forward fill the na values
-        if price_data:
-            df = clean_data(data.copy(), price_data=True, set_index=True) if set_index else clean_data(data.copy(), price_data=True, set_index=False)
-            target_df = pd.DataFrame(0, columns=[0], index=pd.date_range(start=df.index.min(), end=df.index.max(), freq='H'))
+
+    # Create the target df and merge on correct dates. Then forward fill the na values
+    if price_data:
+        df = clean_data(data.copy(), price_data=True, set_index=True) if set_index else clean_data(data.copy(), price_data=True, set_index=False)
+        target_df = pd.DataFrame(0, columns=[0], index=pd.date_range(start=df.index.min(), end=df.index.max(), freq='H'))
         
-        elif on_chain_data:
-            df = clean_data(data.copy(), on_chain_data=True, set_index=True) if set_index else clean_data(data.copy(), on_chain_data=True, set_index=False)
-            target_df = pd.DataFrame(0, columns=[0], index=pd.date_range(start=df.index.min(), end=df.index.max(), freq='H'))
+    elif on_chain_data:
+        df = clean_data(data.copy(), on_chain_data=True, set_index=True) if set_index else clean_data(data.copy(), on_chain_data=True, set_index=False)
+        target_df = pd.DataFrame(0, columns=[0], index=pd.date_range(start=df.index.min(), end=df.index.max(), freq='H'))
 
-        target_df = target_df.join(df, how='left').drop(0, axis=1)
-        target_df = target_df.fillna(method='ffill')
+    elif staking_data:
+        df = clean_data(data.copy(), staking_data=True, set_index=True) if set_index else clean_data(data.copy(), staking_data=True, set_index=False)
+        target_df = pd.DataFrame(0, columns=[0], index=pd.date_range(start=df.index.min(), end=df.index.max(), freq='H'))
+
+    target_df = target_df.join(df, how='left').drop(0, axis=1)
+    target_df = target_df.fillna(method='ffill')
 
 
-        return target_df
+    return target_df
     
 def round_hours(staking_dat):
     staking_data = staking_dat.copy()
