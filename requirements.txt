@@ -9,3 +9,8 @@ scikit-learn~=1.5.1
 DateTime~=5.5
 ruptures
 tensorflow
+seaborn
+arch
+keras-tuner
+imbalanced-learn
+
