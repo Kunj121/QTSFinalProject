@@ -240,7 +240,7 @@ def model_run(data, threshold_multiplier, confusion_matrix = True, plot = True):
     y_cat = to_categorical(integer_encoded)
 
     # Define the split index for 70% training data
-    split_index = int(0.9 * len(X))
+    split_index = int(0.75 * len(X))
 
     # Split the data into training and testing sets
     X_train = X[:split_index]
@@ -800,106 +800,106 @@ def run_crypto_model(crypto_name, num_runs=10, threshold = 0.5):
     return results
 
 
-def optimize_threshold_multiplier(crypto_name, num_runs=5, threshold_values=None):
-    """
-    Optimize the threshold multiplier by testing multiple values and selecting the best-performing one.
-    """
-    import numpy as np
-
-    # Default range of threshold multipliers if not provided
-    if threshold_values is None:
-        threshold_values = np.linspace(0.1, 2.0, 10)  # Test values between 0.1 and 2.0
-
-    best_threshold = None
-    best_results = None
-    best_sharpe_ratio = float('-inf')  # Initialize with a very low value
-
-    # Iterate through different threshold multipliers
-    for threshold in threshold_values:
-        print(f"\nTesting threshold multiplier: {threshold:.2f}")
-
-        # Run the crypto model with the current threshold
-        results = run_crypto_model(crypto_name, num_runs=num_runs, threshold=threshold)
-
-        # Evaluate based on Sharpe Ratio (or another preferred metric)
-        avg_sharpe_ratio = results['avg_sharpe_ratio']
-
-        if avg_sharpe_ratio > best_sharpe_ratio:
-            best_sharpe_ratio = avg_sharpe_ratio
-            best_threshold = threshold
-            best_results = results  # Store the best results
-
-    print(f"\nBest Threshold Multiplier: {best_threshold:.2f}")
-    print(f"Best Average Sharpe Ratio: {best_sharpe_ratio:.4f}")
-
-    # Return the best threshold and corresponding results
-    return {
-        'best_threshold': best_threshold,
-        'best_results': best_results
-    }
-
-
-def optimize_threshold_multiplier_stored(crypto_name, num_runs=5, threshold_values=None):
-    """
-    Optimize the threshold multiplier by testing multiple values and selecting the best-performing one.
-
-    Parameters:
-    -----------
-    crypto_name : str
-        Cryptocurrency ticker symbol (lowercase, e.g., 'aval', 'eth', 'btc')
-    num_runs : int, default=5
-        Number of runs per threshold value.
-    threshold_values : list, default=None
-        List of threshold multipliers to test. If None, a default range is used.
-
-    Returns:
-    --------
-    dict
-        Dictionary containing:
-        - 'best_threshold': The threshold with the highest average Sharpe ratio
-        - 'best_results': Performance metrics for the best threshold
-        - 'all_thresholds': Dictionary mapping each threshold to its average Sharpe ratio
-    """
-    import numpy as np
-
-    # Default range of threshold multipliers if not provided
-    if threshold_values is None:
-        threshold_values = np.linspace(0.1, 2.0, 10)  # Test values between 0.1 and 2.0
-
-    best_threshold = None
-    best_results = None
-    best_sharpe_ratio = float('-inf')  # Initialize with a very low value
-
-    # Dictionary to store average Sharpe ratio for each threshold
-    threshold_sharpe_dict = {}
-
-    # Iterate through different threshold multipliers
-    for threshold in threshold_values:
-        print(f"\nTesting threshold multiplier: {threshold:.2f}")
-
-        # Run the crypto model with the current threshold
-        results = run_crypto_model(crypto_name, num_runs=num_runs, threshold=threshold)
-
-        # Store the average Sharpe ratio for this threshold
-        avg_sharpe_ratio = results['avg_sharpe_ratio']
-        threshold_sharpe_dict[threshold] = avg_sharpe_ratio
-
-        if avg_sharpe_ratio > best_sharpe_ratio:
-            best_sharpe_ratio = avg_sharpe_ratio
-            best_threshold = threshold
-            best_results = results  # Store the best results
-
-    print(f"\nBest Threshold Multiplier: {best_threshold:.2f}")
-    print(f"Best Average Sharpe Ratio: {best_sharpe_ratio:.4f}")
-
-    # Print sharpe ratios for all thresholds
-    print("\nAverage Sharpe Ratios for All Thresholds:")
-    for thresh, sharpe in sorted(threshold_sharpe_dict.items()):
-        print(f"Threshold {thresh:.2f}: Sharpe Ratio = {sharpe:.4f}")
-
-    # Return the best threshold, corresponding results, and all threshold results
-    return {
-        'best_threshold': best_threshold,
-        'best_results': best_results,
-        'all_thresholds': threshold_sharpe_dict
-    }
+# def optimize_threshold_multiplier(crypto_name, num_runs=5, threshold_values=None):
+#     """
+#     Optimize the threshold multiplier by testing multiple values and selecting the best-performing one.
+#     """
+#     import numpy as np
+#
+#     # Default range of threshold multipliers if not provided
+#     if threshold_values is None:
+#         threshold_values = np.linspace(0.1, 2.0, 10)  # Test values between 0.1 and 2.0
+#
+#     best_threshold = None
+#     best_results = None
+#     best_sharpe_ratio = float('-inf')  # Initialize with a very low value
+#
+#     # Iterate through different threshold multipliers
+#     for threshold in threshold_values:
+#         print(f"\nTesting threshold multiplier: {threshold:.2f}")
+#
+#         # Run the crypto model with the current threshold
+#         results = run_crypto_model(crypto_name, num_runs=num_runs, threshold=threshold)
+#
+#         # Evaluate based on Sharpe Ratio (or another preferred metric)
+#         avg_sharpe_ratio = results['avg_sharpe_ratio']
+#
+#         if avg_sharpe_ratio > best_sharpe_ratio:
+#             best_sharpe_ratio = avg_sharpe_ratio
+#             best_threshold = threshold
+#             best_results = results  # Store the best results
+#
+#     print(f"\nBest Threshold Multiplier: {best_threshold:.2f}")
+#     print(f"Best Average Sharpe Ratio: {best_sharpe_ratio:.4f}")
+#
+#     # Return the best threshold and corresponding results
+#     return {
+#         'best_threshold': best_threshold,
+#         'best_results': best_results
+#     }
+#
+#
+# def optimize_threshold_multiplier_stored(crypto_name, num_runs=5, threshold_values=None):
+#     """
+#     Optimize the threshold multiplier by testing multiple values and selecting the best-performing one.
+#
+#     Parameters:
+#     -----------
+#     crypto_name : str
+#         Cryptocurrency ticker symbol (lowercase, e.g., 'aval', 'eth', 'btc')
+#     num_runs : int, default=5
+#         Number of runs per threshold value.
+#     threshold_values : list, default=None
+#         List of threshold multipliers to test. If None, a default range is used.
+#
+#     Returns:
+#     --------
+#     dict
+#         Dictionary containing:
+#         - 'best_threshold': The threshold with the highest average Sharpe ratio
+#         - 'best_results': Performance metrics for the best threshold
+#         - 'all_thresholds': Dictionary mapping each threshold to its average Sharpe ratio
+#     """
+#     import numpy as np
+#
+#     # Default range of threshold multipliers if not provided
+#     if threshold_values is None:
+#         threshold_values = np.linspace(0.1, 2.0, 10)  # Test values between 0.1 and 2.0
+#
+#     best_threshold = None
+#     best_results = None
+#     best_sharpe_ratio = float('-inf')  # Initialize with a very low value
+#
+#     # Dictionary to store average Sharpe ratio for each threshold
+#     threshold_sharpe_dict = {}
+#
+#     # Iterate through different threshold multipliers
+#     for threshold in threshold_values:
+#         print(f"\nTesting threshold multiplier: {threshold:.2f}")
+#
+#         # Run the crypto model with the current threshold
+#         results = run_crypto_model(crypto_name, num_runs=num_runs, threshold=threshold)
+#
+#         # Store the average Sharpe ratio for this threshold
+#         avg_sharpe_ratio = results['avg_sharpe_ratio']
+#         threshold_sharpe_dict[threshold] = avg_sharpe_ratio
+#
+#         if avg_sharpe_ratio > best_sharpe_ratio:
+#             best_sharpe_ratio = avg_sharpe_ratio
+#             best_threshold = threshold
+#             best_results = results  # Store the best results
+#
+#     print(f"\nBest Threshold Multiplier: {best_threshold:.2f}")
+#     print(f"Best Average Sharpe Ratio: {best_sharpe_ratio:.4f}")
+#
+#     # Print sharpe ratios for all thresholds
+#     print("\nAverage Sharpe Ratios for All Thresholds:")
+#     for thresh, sharpe in sorted(threshold_sharpe_dict.items()):
+#         print(f"Threshold {thresh:.2f}: Sharpe Ratio = {sharpe:.4f}")
+#
+#     # Return the best threshold, corresponding results, and all threshold results
+#     return {
+#         'best_threshold': best_threshold,
+#         'best_results': best_results,
+#         'all_thresholds': threshold_sharpe_dict
+#     }
