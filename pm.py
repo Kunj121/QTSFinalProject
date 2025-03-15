@@ -27,7 +27,7 @@ def prep_data():
     near_prices.index = np.arange(len(near_prices))
 
 
-    # Define the split index for 70% training data
+    # Define the split index for 85% training data
     split_index = len(avax_preds)
     avax_prices = avax_prices[-split_index:].reset_index().drop(columns=['index'])
     avax_preds['time'] = avax_prices['time_period_end']
@@ -206,6 +206,118 @@ def calculate_investment_portfolio(dfs, price_dfs, starting_capital, portfolio_s
     stop_loss_events = {coin: pd.DataFrame({"Time": events}) for coin, events in stop_loss_events.items() if events}
 
 
+
+    return all_results, stop_loss_events
+
+
+
+def calculate_investment_portfolio_alt_stop_loss(dfs, price_dfs, starting_capital, portfolio_size, coin_names, stop_loss=True, stop_loss_pct=0.55, trading_fee_proportion=0.001):
+    """
+    Calculates investment amounts and PNL for each coin, incorporating price data with optional stop-loss logic.
+    """
+    stop_loss_events = {coin: [] for coin in coin_names}
+    max_investment_per_coin = starting_capital / portfolio_size
+    coin_investments = {coin: 0 for coin in coin_names}
+    coin_cash = {coin: max_investment_per_coin for coin in coin_names}
+    coin_holdings = {coin: 0 for coin in coin_names}
+    coin_values = {coin: 0 for coin in coin_names}
+    coin_entry_price = {coin: None for coin in coin_names}  # Store initial buy price per coin
+
+    all_results = {}
+    stop_loss_pct /= 100  # Convert percentage to decimal
+
+    for coin, df in dfs.items():
+        results = []
+        price_df = price_dfs[coin].copy()
+        price_df = price_df.rename(columns={'time_period_end': 'time', 'price_close': 'Close'})
+        price_df['time'] = pd.to_datetime(price_df['time'])
+        df['time'] = pd.to_datetime(df['time'])
+        price_df = price_df.set_index('time')
+        df = df.set_index('time')
+
+        for index, row in df.iterrows():
+            prediction = row["Prediction"]
+            prob_buy = row["Probability Buy"] / 100
+            prob_sell = row["Probability Sell"] / 100
+
+            # Ensure index exists in price_df; otherwise, forward-fill the last known price
+            if index in price_df.index:
+                current_price = price_df.loc[index, 'Close']
+            else:
+                current_price = price_df['Close'].iloc[price_df.index.get_loc(index, method='ffill')]
+
+            investment_amount = 0
+            stop_loss_triggered = False
+
+            # Handle stop-loss if enabled
+            if stop_loss and coin_holdings[coin] > 0 and coin_entry_price[coin] is not None:
+                stop_loss_price = coin_entry_price[coin] * (1 - stop_loss_pct)
+                if current_price < stop_loss_price:
+                    stop_loss_events[coin].append(index)  # Store stop-loss event
+                    sell_value = coin_holdings[coin] * current_price
+                    investment_amount = -sell_value
+                    coin_cash[coin] += sell_value
+                    coin_holdings[coin] = 0  # Liquidate position
+                    coin_entry_price[coin] = None  # Reset entry price
+                    stop_loss_triggered = True
+
+            # Only proceed with regular buy/sell logic if stop-loss wasn't triggered
+            if not stop_loss_triggered:
+                if prediction == 0:  # Buy
+                    available_cash = coin_cash[coin]
+                    if available_cash > 0:
+                        investment_amount = min(available_cash, max_investment_per_coin * prob_buy)
+                        trading_fee = trading_fee_proportion * investment_amount
+                        coin_investments[coin] += investment_amount
+                        coin_cash[coin] -= (investment_amount + trading_fee)
+                        units_bought = investment_amount / current_price
+                        coin_holdings[coin] += units_bought
+
+                        # Set entry price if this is a new position or adjust for additional buys
+                        if coin_entry_price[coin] is None:
+                            coin_entry_price[coin] = current_price
+                        else:
+                            # Weighted average entry price for additional purchases
+                            prev_value = (coin_holdings[coin] - units_bought) * coin_entry_price[coin]
+                            new_value = units_bought * current_price
+                            coin_entry_price[coin] = (prev_value + new_value) / coin_holdings[coin]
+
+                elif prediction == 2:  # Sell
+                    available_holdings = coin_holdings[coin]
+                    if available_holdings > 0:
+                        sell_value = min(available_holdings * current_price, max_investment_per_coin * prob_sell)
+                        units_sold = min(available_holdings, sell_value / current_price)  # Ensure valid units_sold
+                        investment_amount = -units_sold * current_price
+                        trading_fee = trading_fee_proportion * abs(investment_amount)
+                        coin_investments[coin] += investment_amount
+                        coin_cash[coin] += (-investment_amount - trading_fee)  # Add cash from sale
+                        coin_holdings[coin] -= units_sold
+
+                        # Reset entry price if all holdings are sold
+                        if coin_holdings[coin] == 0:
+                            coin_entry_price[coin] = None
+
+            # Update values
+            coin_values[coin] = coin_holdings[coin] * current_price
+            total_coin_value = sum(coin_values.values())
+            total_cash = sum(coin_cash.values())
+            total_portfolio_value = total_coin_value + total_cash
+
+            results.append({
+                "Prediction": prediction,
+                "Probability Buy": row["Probability Buy"],
+                "Probability Sell": row["Probability Sell"],
+                "Investment": investment_amount,
+                "Cash Holdings": coin_cash[coin],
+                "Stock Holdings": coin_holdings[coin],
+                "Coin Value": coin_values[coin],
+                "Total Portfolio Value": total_portfolio_value,
+                "Stop Loss Triggered": stop_loss_triggered
+            })
+
+        all_results[coin] = pd.DataFrame(results)
+
+    stop_loss_events = {coin: pd.DataFrame({"Time": events}) for coin, events in stop_loss_events.items() if events}
 
     return all_results, stop_loss_events
 
