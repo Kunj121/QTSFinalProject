@@ -107,7 +107,7 @@ def calculate_investment_portfolio(dfs, price_dfs, starting_capital, portfolio_s
 
     all_results = {}
 
-    trading_fee_proportion = 0.001
+
     stop_loss_pct /= 100  # Convert percentage to decimal
 
     for coin, df in dfs.items():
@@ -166,6 +166,7 @@ def calculate_investment_portfolio(dfs, price_dfs, starting_capital, portfolio_s
                             prev_value = (coin_holdings[coin] - units_bought) * coin_entry_price[coin]
                             new_value = units_bought * current_price
                             coin_entry_price[coin] = (prev_value + new_value) / coin_holdings[coin]
+
 
                 elif prediction == 2:  # Sell
                     available_holdings = coin_holdings[coin]
@@ -235,6 +236,24 @@ def calculate_pnl(results, initial_capital):
         cumulative_capital.append(portfolio_value)
 
     return pd.Series(cumulative_capital).diff().cumsum(), pd.Series(cumulative_capital)
+
+def calculate_pnl_2(results, initial_capital):
+    """Calculates PNL and cumulative capital."""
+    pnl = []
+    cumulative_capital = []
+
+    # Any coin works, so let's just pick the first coin’s DataFrame
+    first_coin_df = next(iter(results.values()))
+
+    for index in range(len(first_coin_df)):
+        # Grab the total portfolio value from the first coin only
+        portfolio_value = first_coin_df.loc[index, "Total Portfolio Value"]
+        current_pnl = portfolio_value - initial_capital
+
+        pnl.append(current_pnl)
+        cumulative_capital.append(portfolio_value)
+
+    return pd.Series(pnl), pd.Series(cumulative_capital)
 
     # coin_names = list(dfs.keys())
     # stop_loss_pct = .1
