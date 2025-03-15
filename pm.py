@@ -231,10 +231,10 @@ def calculate_pnl(results, initial_capital):
               sys.exit(1)
               break
 
-        pnl.append(portfolio_value - initial_capital)
+        #pnl.append(portfolio_value - initial_capital)
         cumulative_capital.append(portfolio_value)
 
-    return pd.Series(pnl), pd.Series(cumulative_capital)
+    return pd.Series(cumulative_capital).diff().cumsum(), pd.Series(cumulative_capital)
 
     # coin_names = list(dfs.keys())
     # stop_loss_pct = .1
