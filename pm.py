@@ -148,7 +148,7 @@ def calculate_investment_portfolio(dfs, price_dfs, starting_capital, portfolio_s
 
             # Only proceed with regular buy/sell logic if stop-loss wasn't triggered
             if not stop_loss_triggered:
-                if prediction == 1:  # Buy
+                if prediction == 0:  # Buy
                     available_cash = coin_cash[coin]
                     if available_cash > 0:
                         investment_amount = min(available_cash, max_investment_per_coin * prob_buy)
