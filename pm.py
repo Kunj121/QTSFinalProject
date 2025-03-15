@@ -25,20 +25,11 @@ def prep_data():
     near_prices.index = np.arange(len(near_prices))
 
 
-<<<<<<< HEAD
     # Define the split index for 70% training data
     avax_start = str(pd.to_datetime(avax_preds.iloc[0, -1]) - pd.Timedelta(hours=1))
     avax_end = avax_preds.iloc[-1, -1]
     avax_prices = avax_prices.set_index('time_period_end')
     avax_prices = avax_prices.loc[avax_start:avax_end].reset_index()
-=======
-    # Define the split index for 85% training data
-    split_index = len(avax_preds)
-    avax_prices = avax_prices[-split_index:].reset_index().drop(columns=['index'])
-    avax_preds['time'] = avax_prices['time_period_end']
-    avax_preds = avax_preds[(avax_preds['time'] >= '2024-01-01') & (avax_preds['time'] <= '2024-09-09')].reset_index().drop(columns=['index'])
-    avax_prices = avax_prices[(avax_prices['time_period_end'] >= '2024-01-01') & (avax_prices['time_period_end'] <= '2024-09-09')].reset_index().drop(columns=['index'])
->>>>>>> e5e94d1d519c01ae5ae61d0c6df43510b8fd4c86
 
     dot_start = str(pd.to_datetime(dot_preds.iloc[0, -1]) - pd.Timedelta(hours=1))
     dot_end = dot_preds.iloc[-1, -1]
