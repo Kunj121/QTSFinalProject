@@ -98,6 +98,7 @@ def calculate_investment_portfolio(dfs, price_dfs, starting_capital, portfolio_s
 
 
     stop_loss_pct /= 100  # Convert percentage to decimal
+    
 
     for coin, df in dfs.items():
         results = []
@@ -326,26 +327,106 @@ def calculate_pnl(results, initial_capital):
     pnl = []
     cumulative_capital = pd.DataFrame()
 
-    print('RESULTS\n')
-    print(results)
 
-    first_coin = next(iter(results.values()))
+    print('RESULTS\n')
+    print(type(results))
+    coins = [key for key in results.keys()]
+    last_reported_values = []
+    for coin in coins:
+      last_reported_values.append(results[coin].iloc[-1, -2])
+    print(coins)
+    print(last_reported_values)
+
+    start_date = pd.to_datetime('2026-12-12').tz_localize(None)
+    end_date = pd.to_datetime('1999-01-01').tz_localize(None)
+    for coin in coins:
+      s = pd.to_datetime(results[coin].iloc[0, 0]).tz_localize(None)
+      e = pd.to_datetime(results[coin].iloc[-1, 0]).tz_localize(None)
+      #print(s)
+      if s <= start_date:
+        start_date = s
+      if e >= end_date:
+        end_date = e
+
+    #print(start_date)
+    #print(end_date)
+
+    for coin in coins:
+      #if coin == "MATIC":
+        #continue
+      '''end = pd.to_datetime(results[coin].iloc[0, 0]).tz_localize(None) #- pd.Timedelta(hours=1)
+      front_idx = pd.date_range(start=start_date, end=end, freq='H', inclusive='left')
+
+      front = pd.to_datetime(results[coin].iloc[-1, 0]).tz_localize(None)
+      end_idx = pd.date_range(start=front, end=end_date, freq='H', inclusive='right')
+
+      stacker_left = pd.DataFrame({'Date': front_idx,
+                              'Prediction': np.zeros(len(front_idx)),
+                              'Probability Buy': np.zeros(len(front_idx)),
+                              'Probability Sell': np.zeros(len(front_idx)),
+                              'Investment': np.zeros(len(front_idx)),
+                              'Cash Holdings': np.zeros(len(front_idx)),
+                              'Stock Holdings': np.zeros(len(front_idx)),
+                              'Coin Value': np.zeros(len(front_idx)),
+                              'Total Portfolio Value': np.full(len(front_idx), 20_000),
+                              'Stop Loss Triggered': np.full(len(front_idx), False)})
+
+      closed_value = results[coin].iloc[-1, -2]
+      stacker_right = pd.DataFrame({'Date': end_idx,
+                              'Prediction': np.zeros(len(end_idx)),
+                              'Probability Buy': np.zeros(len(end_idx)),
+                              'Probability Sell': np.zeros(len(end_idx)),
+                              'Investment': np.zeros(len(end_idx)),
+                              'Cash Holdings': np.zeros(len(end_idx)),
+                              'Stock Holdings': np.zeros(len(end_idx)),
+                              'Coin Value': np.zeros(len(end_idx)),
+                              'Total Portfolio Value': np.full(len(end_idx), closed_value),
+                              'Stop Loss Triggered': np.full(len(end_idx), False)})
+      #display(stacker)
+      
+      results[coin] = pd.concat([stacker_left, pd.concat([results[coin], stacker_right])])'''
+      
+      #display(results[coin])
+
+
+    cum_cap_idx = pd.date_range(start=start_date, end=end_date, freq='H')
+    cumulative_capital = pd.DataFrame({'Portfolio Value': np.zeros(len(cum_cap_idx))},
+                                      index=cum_cap_idx)
+
+    #display(cumulative_capital)
+
+    for date in cumulative_capital.index:
+      for idx, coin in enumerate(coins):
+        df = results[coin]
+        s = pd.to_datetime(df.iloc[0, 0]).tz_localize(None)
+        e = pd.to_datetime(df.iloc[-1, 0]).tz_localize(None)
+        if date <= s:
+          cumulative_capital.loc[date] += 20_000
+        elif date >= e:
+          cumulative_capital.loc[date] += last_reported_values[idx]
+        else:
+          row = df[df['Date'] == str(date) + "+00:00"]
+          #print(float(row['Total Portfolio Value']))
+          #print(float(cumulative_capital.loc[date]))
+          try:
+            cumulative_capital.loc[date] = float(cumulative_capital.loc[date]) + float(row['Total Portfolio Value'])
+          except:
+            cumulative_capital.loc[date] = float(cumulative_capital.loc[date]) + 0
+          #display(cumulative_capital.loc[date])
+
+
+    '''first_coin = next(iter(results.values()))
     for index in range(len(results.values())):
         portfolio_value = 0
         for coin_result in results.values():
-            try:
-              portfolio_value += coin_result.loc[index, "Total Portfolio Value"]
-            except KeyError as e:
-              display(coin_result)
-              display(first_coin)
-              display(index)
-              sys.exit(1)
-              break
+            portfolio_value += coin_result.loc[index, "Total Portfolio Value"]
 
         #pnl.append(portfolio_value - initial_capital)
-        cumulative_capital.append(portfolio_value)
+        cumulative_capital.append(portfolio_value)'''
 
-    return pd.Series(cumulative_capital).diff().cumsum(), pd.Series(cumulative_capital)
+    display(cumulative_capital)
+
+    return cumulative_capital.loc[:, 'Portfolio Value'].diff().cumsum(), cumulative_capital.loc[:, 'Portfolio Value']
 
 def calculate_pnl_2(results, initial_capital):
     """Calculates PNL and cumulative capital."""
