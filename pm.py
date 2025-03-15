@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import sys
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -17,9 +18,6 @@ def prep_data():
     near_prices  = pd.read_parquet('Crypto_QTS_Data_Processed/near_price_processed.parquet')
     sol_prices = pd.read_parquet('data/price_data/processed/sol_processed_data.parquet')
 
-
-
-
     dot_prices['time_period_end'] = dot_prices.index
     dot_prices.index = np.arange(len(dot_prices))
 
@@ -28,38 +26,30 @@ def prep_data():
 
 
     # Define the split index for 70% training data
-    split_index = len(avax_preds)
-    avax_prices = avax_prices[-split_index:].reset_index().drop(columns=['index'])
-    avax_preds['time'] = avax_prices['time_period_end']
-    avax_preds = avax_preds[(avax_preds['time'] >= '2024-01-01') & (avax_preds['time'] <= '2024-09-09')].reset_index().drop(columns=['index'])
-    avax_prices = avax_prices[(avax_prices['time_period_end'] >= '2024-01-01') & (avax_prices['time_period_end'] <= '2024-09-09')].reset_index().drop(columns=['index'])
+    avax_start = str(pd.to_datetime(avax_preds.iloc[0, -1]) - pd.Timedelta(hours=1))
+    avax_end = avax_preds.iloc[-1, -1]
+    avax_prices = avax_prices.set_index('time_period_end')
+    avax_prices = avax_prices.loc[avax_start:avax_end].reset_index()
 
-    split_index = len(near_preds)
-    near_prices = near_prices[-split_index:].reset_index().drop(columns=['index'])
-    near_preds['time'] = near_prices['time_period_end']
-    near_preds = near_preds[(near_preds['time'] >= '2024-01-01') & (near_preds['time'] <= '2024-09-09')].reset_index().drop(columns=['index'])
-    near_prices = near_prices[(near_prices['time_period_end'] >= '2024-01-01') & (near_prices['time_period_end'] <= '2024-09-09')].reset_index().drop(columns=['index'])
+    dot_start = str(pd.to_datetime(dot_preds.iloc[0, -1]) - pd.Timedelta(hours=1))
+    dot_end = dot_preds.iloc[-1, -1]
+    dot_prices = dot_prices.set_index('time_period_end')
+    dot_prices = dot_prices.loc[dot_start:dot_end].reset_index()
 
-    split_index = len(sol_preds)
-    sol_prices = sol_prices[-split_index:].reset_index().drop(columns=['index'])
-    sol_preds['time'] = sol_prices['time_period_end']
-    sol_preds = sol_preds[(sol_preds['time'] >= '2024-01-01') & (sol_preds['time'] <= '2024-09-09')].reset_index().drop(columns=['index'])
-    sol_prices = sol_prices[(sol_prices['time_period_end'] >= '2024-01-01') & (sol_prices['time_period_end'] <= '2024-09-09')].reset_index().drop(columns=['index'])
+    sol_start = str(pd.to_datetime(sol_preds.iloc[0, -1]) - pd.Timedelta(hours=1))
+    sol_end = sol_preds.iloc[-1, -1]
+    sol_prices = sol_prices.set_index('time_period_end')
+    sol_prices = sol_prices.loc[sol_start:sol_end].reset_index()
 
-    split_index = len(dot_preds)
-    dot_prices = dot_prices[-split_index:].reset_index().drop(columns=['index'])
-    dot_preds['time'] = dot_prices['time_period_end']
-    dot_preds = dot_preds[(dot_preds['time'] >= '2024-01-01') & (dot_preds['time'] <= '2024-09-09')].reset_index().drop(columns=['index'])
-    dot_prices = dot_prices[(dot_prices['time_period_end'] >= '2024-01-01') & (dot_prices['time_period_end'] <= '2024-09-09')].reset_index().drop(columns=['index'])
+    near_start = str(pd.to_datetime(near_preds.iloc[0, -1]) - pd.Timedelta(hours=1))
+    near_end = near_preds.iloc[-1, -1]
+    near_prices = near_prices.set_index('time_period_end')
+    near_prices = near_prices.loc[near_start:near_end].reset_index()
 
-    split_index = len(matic_preds)
-    matic_prices = matic_prices[-split_index:].reset_index().drop(columns=['index'])
-    matic_preds['time'] = matic_prices['time_period_end']
-    matic_preds = matic_preds[(matic_preds['time'] >= '2024-01-01') & (matic_preds['time'] <= '2024-09-09')].reset_index().drop(columns=['index'])
-    matic_prices = matic_prices[(matic_prices['time_period_end'] >= '2024-01-01') & (matic_prices['time_period_end'] <= '2024-09-09')].reset_index().drop(columns=['index'])
-
-
-
+    matic_start = str(pd.to_datetime(matic_preds.iloc[0, -1]) - pd.Timedelta(hours=1))
+    matic_end = matic_preds.iloc[-1, -1]
+    matic_prices = matic_prices.set_index('time_period_end')
+    matic_prices = matic_prices.loc[matic_start:matic_end].reset_index()
 
     dfs = {
         "AVAX": avax_preds,
@@ -84,7 +74,6 @@ def prep_data():
     sol_preds.drop(columns='Unnamed: 0', inplace=True)
     dot_preds.drop(columns='Unnamed: 0', inplace=True)
     matic_preds.drop(columns='Unnamed: 0', inplace=True)
-
 
     return dfs, price_dfs
 
@@ -114,8 +103,8 @@ def calculate_investment_portfolio(dfs, price_dfs, starting_capital, portfolio_s
         results = []
         price_df = price_dfs[coin].copy()
         price_df = price_df.rename(columns={'time_period_end': 'time', 'price_close': 'Close'})
-        price_df['time'] = pd.to_datetime(price_df['time'])
-        df['time'] = pd.to_datetime(df['time'])
+        price_df['times'] = pd.to_datetime(price_df['time'])
+        df['time'] = pd.to_datetime(df['Dates'])
         price_df = price_df.set_index('time')
         df = df.set_index('time')
 
@@ -124,16 +113,20 @@ def calculate_investment_portfolio(dfs, price_dfs, starting_capital, portfolio_s
             prob_buy = row["Probability Buy"] / 100
             prob_sell = row["Probability Sell"] / 100
 
+            index = str(index)[:-9]
             # Ensure index exists in price_df; otherwise, forward-fill the last known price
             if index in price_df.index:
                 current_price = price_df.loc[index, 'Close']
             else:
+                #print(price_df.index[0])
+                #print(str(index)[:-9])
+                #sys.exit(1)
                 current_price = price_df['Close'].iloc[price_df.index.get_loc(index, method='ffill')]
 
             investment_amount = 0
             stop_loss_triggered = False
 
-            # Stop-loss check: If the price drops below stop-loss level, force sell
+            '''# Stop-loss check: If the price drops below stop-loss level, force sell
             if coin_holdings[coin] > 0 and coin_entry_price[coin] is not None:
                 stop_loss_price = coin_entry_price[coin] * (1 - stop_loss_pct)
                 if current_price < stop_loss_price:
@@ -144,8 +137,9 @@ def calculate_investment_portfolio(dfs, price_dfs, starting_capital, portfolio_s
                     coin_holdings[coin] = 0  # Liquidate position
                     coin_entry_price[coin] = None  # Reset entry price
                     stop_loss_triggered = True
-                    # print(f"Stop-loss triggered for {coin} at {index}. Sold holdings at {current_price}")
+                    # print(f"Stop-loss triggered for {coin} at {index}. Sold holdings at {current_price}")'''
 
+            stop_loss_triggered = False
             # Only proceed with regular buy/sell logic if stop-loss wasn't triggered
             if not stop_loss_triggered:
                 if prediction == 0:  # Buy
@@ -190,6 +184,7 @@ def calculate_investment_portfolio(dfs, price_dfs, starting_capital, portfolio_s
             total_portfolio_value = total_coin_value + total_cash
 
             results.append({
+                "Date": row['Dates'],
                 "Prediction": prediction,
                 "Probability Buy": row["Probability Buy"],
                 "Probability Sell": row["Probability Sell"],
@@ -217,10 +212,13 @@ import sys
 def calculate_pnl(results, initial_capital):
     """Calculates PNL and cumulative capital."""
     pnl = []
-    cumulative_capital = []
+    cumulative_capital = pd.DataFrame()
+
+    print('RESULTS\n')
+    print(results)
 
     first_coin = next(iter(results.values()))
-    for index in range(len(first_coin)):
+    for index in range(len(results.values())):
         portfolio_value = 0
         for coin_result in results.values():
             try:
