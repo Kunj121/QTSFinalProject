@@ -93,7 +93,7 @@ def prep_data():
 
 
 
-def calculate_investment_portfolio(dfs, price_dfs, starting_capital, portfolio_size, coin_names, stop_loss_pct=.55, trading_fee_proportion = 0.001):
+def calculate_investment_portfolio(dfs, price_dfs, starting_capital, portfolio_size, coin_names, stop_loss_pct=0.55, trading_fee_proportion = 0.001):
     """
     Calculates investment amounts and PNL for each coin, incorporating price data with stop-loss logic.
     """
